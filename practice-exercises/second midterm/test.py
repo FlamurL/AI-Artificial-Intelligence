@@ -1,0 +1,1 @@
+print("Welcome to the material for the second midterm")
