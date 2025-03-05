@@ -35,7 +35,7 @@ if __name__ == "__main__":
     students = {}
     
     while True:
-        line = input().strip()
+        line = input()
         if line.lower() == "end":
             break
         
