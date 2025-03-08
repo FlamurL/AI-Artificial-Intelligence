@@ -36,7 +36,7 @@ class UpAgent(Agent):
         super().__init__(x, y)
 
     def move(self):
-        self.y+=1;
+        self.y+=1
 
 
 class DownAgent(Agent):
