@@ -1,94 +1,87 @@
 import os
-
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
+from sklearn import *
+
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import accuracy_score
-import numpy as np
-
-
-def modify_dataset(dataset):
-    modified = []
-    for row in dataset:
-        # Sum of first and last chemical features
-        feature_sum = row[0] + row[-2]
-        # Create new row with sum as first column, exclude first and last chemical features
-        new_row = [feature_sum] + row[1:-2] + [row[-1]]
-        modified.append(new_row)
-    return modified
-
-
-def split_dataset(dataset, C, P):
-    # Separate good and bad classes
-    good_wines = [row for row in dataset if row[-1] == 'good']
-    bad_wines = [row for row in dataset if row[-1] == 'bad']
-
-    # Calculate split sizes
-    good_train_size = int(len(good_wines) * P / 100)
-    bad_train_size = int(len(bad_wines) * P / 100)
-
-    if C == 0:
-        # First P% for training
-        train_good = good_wines[:good_train_size]
-        test_good = good_wines[good_train_size:]
-        train_bad = bad_wines[:bad_train_size]
-        test_bad = bad_wines[bad_train_size:]
-    else:
-        # Last P% for training
-        train_good = good_wines[-good_train_size:]
-        test_good = good_wines[:-good_train_size]
-        train_bad = bad_wines[-bad_train_size:]
-        test_bad = bad_wines[:-bad_train_size]
-
-    # Combine training and testing sets
-    train = train_good + train_bad
-    test = test_good + test_bad
-
-    # Separate features and labels
-    X_train = [row[:-1] for row in train]
-    y_train = [row[-1] for row in train]
-    X_test = [row[:-1] for row in test]
-    y_test = [row[-1] for row in test]
-
-    return np.array(X_train), np.array(y_train), np.array(X_test), np.array(y_test)
-
-
-def scale_features(X_train, X_test):
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-    return X_train_scaled, X_test_scaled
 
 
 def main():
     global dataset
-
     C = int(input())
     P = int(input())
 
-    # Modify dataset (sum of first and last features)
-    modified_dataset = modify_dataset(dataset)
+    dataset_new = []
+    for row in dataset:
+        new_row=[]
+        new_elem = row[0] + row[-2]
+        new_row.append(new_elem)
+        new_row.extend(row[1:-2])
+        new_row.append(row[-1])
 
-    # Split dataset
-    X_train, y_train, X_test, y_test = split_dataset(modified_dataset, C, P)
+        dataset_new.append(new_row)
 
-    # Train and evaluate classifier without scaling
-    clf_unscaled = GaussianNB()
-    clf_unscaled.fit(X_train, y_train)
-    y_pred_unscaled = clf_unscaled.predict(X_test)
-    accuracy_unscaled = accuracy_score(y_test, y_pred_unscaled)
+    dataset=dataset_new
 
-    # Scale features and train classifier with scaling
-    X_train_scaled, X_test_scaled = scale_features(X_train, X_test)
-    clf_scaled = GaussianNB()
-    clf_scaled.fit(X_train_scaled, y_train)
-    y_pred_scaled = clf_scaled.predict(X_test_scaled)
-    accuracy_scaled = accuracy_score(y_test, y_pred_scaled)
 
-    # Print results
-    print(f"Tochnost so zbir na koloni: {accuracy_unscaled}")
-    print(f"Tochnost so zbir na koloni i skaliranje: {accuracy_scaled}")
+    dataset = dataset_new
+
+    dataset_good = [row for row in dataset if row[-1] == "good"]
+    dataset_bad = [row for row in dataset if row[-1] == "bad"]
+
+    if C == 0:
+        threshold_good = int(P * len(dataset_good) / 100)
+        threshold_bad = int(P * len(dataset_bad) / 100)
+
+        train_good = dataset_good[:threshold_good]
+        test_good = dataset_good[threshold_good:]
+
+        train_bad = dataset_bad[:threshold_bad]
+        test_bad = dataset_bad[threshold_bad:]
+    else:
+        threshold_good = int((100 - P) * len(dataset_good) / 100)
+        threshold_bad = int((100 - P) * len(dataset_bad) / 100)
+
+        train_good = dataset_good[threshold_good:]
+        test_good = dataset_good[:threshold_good]
+
+        train_bad = dataset_bad[threshold_bad:]
+        test_bad = dataset_bad[:threshold_bad]
+
+    train = train_good + train_bad
+    test = test_good + test_bad
+
+    train_X = [row[:-1] for row in train]
+    train_Y = [row[-1] for row in train]
+
+    test_X = [row[:-1] for row in test]
+    test_Y = [row[-1] for row in test]
+
+
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    scaler.fit(train_X)
+
+    train_x_scaled = scaler.transform(train_X)
+    test_x_scaled = scaler.transform(test_X)
+
+
+    classificator1 = GaussianNB()
+    classificator2 = GaussianNB()
+
+    classificator1.fit(train_X, train_Y)
+    classificator2.fit(train_x_scaled, train_Y)
+
+    predY1 = classificator1.predict(test_X)
+    predY2 = classificator2.predict(test_x_scaled)
+
+    acc1 = sum(1 for true, pred in zip(test_Y, predY1) if true == pred) / len(test_Y)
+    acc2 = sum(1 for true, pred in zip(test_Y, predY2) if true == pred) / len(test_Y)
+
+    print("Tochnost so zbir na koloni:", acc1)
+    print("Tochnost so zbir na koloni i skaliranje:", acc2)
+
+
 
 
 dataset = [[7.4, 0.7, 0, 1.9, 0.076, 11, 34, 0.9978, 3.51, 0.56, 9.4, 'bad'],
