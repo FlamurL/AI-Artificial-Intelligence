@@ -428,5 +428,7 @@ data = [[0.02, 0.0371, 0.0428, 0.0207, 0.0954, 0.0986, 0.1539, 0.1601, 0.3109, 0
 
 if __name__ == '__main__':
     warnings.filterwarnings('ignore', category=ConvergenceWarning)
-    mode = input()
-    split = int(input())
+    model = input()
+    col = int(input())
+    dataset = data
+    
